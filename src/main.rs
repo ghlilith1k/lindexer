@@ -15,6 +15,86 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+// dependencies
+use std::io;
+use std::fs;
+use std::fs::File;
+use std::env;
+use std::path::Path;
+use std::path::PathBuf;
+use glob::glob;
+
+// constants
+const CONFIG_FILE: &str = ".config/lindexer/lindexer.toml";
+const CONFIG_DIR: &str = ".config/lindexer";
+
+// main thread
 fn main() {
-    println!("Hello, world!");
+    if Config::validate(CONFIG_FILE) {
+        let config = Config::parse(CONFIG_FILE.to_string());
+        println!("{}", config);
+        return
+    } else {
+        Config::create(CONFIG_DIR, CONFIG_FILE);
+        return
+    }
+}
+
+// config implementations
+struct Config;
+impl Config {
+    
+    // config parser
+    fn parse(path: String) -> String {
+        let home = env::var_os("HOME").expect("HOME not set");
+        let config_file = PathBuf::from(home).join(path);
+        match fs::read_to_string(config_file) {
+            Ok(config) => {
+                return config.trim().to_string()
+            }
+            Err(error) => { 
+                println!("couldn't read config file contents: {}", error);
+                return "".to_string()
+                
+            }
+        }
+    }
+    
+    // config validator
+    fn validate(path: &str) -> bool {
+        let home = env::var_os("HOME").expect("HOME not set");
+        let config_file = PathBuf::from(home).join(path);
+        Path::new(&config_file).is_file()
+    }
+    
+    // config creators
+    fn create(dir: &str, file: &str) {
+        let home = env::var_os("HOME").expect("HOME not set");
+        let config_dir = PathBuf::from(&home).join(dir);
+        let config_file = PathBuf::from(home).join(file);
+        loop {
+            if config_dir.is_dir() {
+                match File::create(&config_file) {
+                    Ok(_) => {
+                        println!("successfully created config file, relaunch lindexer");
+                        break
+                    }
+                    Err(error) => {
+                        println!("couldn't create config file: {}", error);
+                        break
+                    }
+                }
+            } else {
+                match fs::create_dir(&config_dir) {
+                    Ok(_) => {
+                        println!("successfully create config directory")
+                    }
+                    Err(error) => {
+                        println!("couldn't create config directory: {}", error);
+                        break
+                    }
+                }
+            }
+        }
+    }
 }

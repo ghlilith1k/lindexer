@@ -26,12 +26,14 @@ lindexer is a CLI utility for by-type file sorting/indexing, basically it gets t
 
 - current version: v0.0.1-alpha
 - current stable: none
-- total lines of code: 20
+- total lines of code: 100
 - for future releases: see "Dev Notes"
 
 # Dev Notes / Known Issues
 
-- PLACEHOLDER
+- finish parsing implementation
+- work on sorting algorithm
+- work on config arguments
 
 # Changelog
 
