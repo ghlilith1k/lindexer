@@ -23,38 +23,68 @@ use std::env;
 use std::path::Path;
 use std::path::PathBuf;
 use glob::glob;
+use crossterm::{event::{read, Event, KeyCode}, terminal};
 
 // constants
 const CONFIG_FILE: &str = ".config/lindexer/lindexer.toml";
 const CONFIG_DIR: &str = ".config/lindexer";
 
 // main thread
-fn main() {
+fn main() -> std::io::Result<()> {
     if Config::validate(CONFIG_FILE) {
         let config = Config::parse(CONFIG_FILE.to_string());
-        println!("{}", config);
-        return
     } else {
         Config::create(CONFIG_DIR, CONFIG_FILE);
-        return
+        return Ok(())
     }
+    match terminal::enable_raw_mode() {
+        Ok(_) => {
+            println!("q = quit\r\n")
+        }
+        Err(error) => {
+            println!("couldn't enable raw mode: {}", error);
+        }
+    }
+    loop {
+        if let Event::Key(key) = read()? {
+            if key.code == KeyCode::Char('q') {
+                break
+            }
+        }
+    }
+    terminal::disable_raw_mode()
 }
 
 // config implementations
-struct Config;
+struct Config{
+    logging: bool
+}
 impl Config {
     
     // config parser
-    fn parse(path: String) -> String {
+    fn parse(path: String) -> Config {
         let home = env::var_os("HOME").expect("HOME not set");
         let config_file = PathBuf::from(home).join(path);
         match fs::read_to_string(config_file) {
             Ok(config) => {
-                return config.trim().to_string()
+                for line in config.lines() {
+                    let Some((variable, value)) = line.split_once('=') else {
+                        continue
+                    };
+                    match variable.trim() {
+                        "logging" => {
+                            if value.trim() == "true" {
+                                return Config { logging: true }
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                return Config { logging: false }
             }
             Err(error) => { 
                 println!("couldn't read config file contents: {}", error);
-                return "".to_string()
+                return Config { logging: false }
                 
             }
         }
@@ -85,7 +115,7 @@ impl Config {
                     }
                 }
             } else {
-                match fs::create_dir(&config_dir) {
+                match fs::create_dir_all(&config_dir) {
                     Ok(_) => {
                         println!("successfully create config directory")
                     }
