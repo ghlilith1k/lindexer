@@ -37,6 +37,6 @@ lindexer is a CLI utility for by-type file sorting/indexing, basically it gets t
 
 # Changelog
 
-## release v0.0.1-alpha - pending
+## release v0.0.1-alpha - packaged
 
 just a starting point for future release
