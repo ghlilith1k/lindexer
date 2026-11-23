@@ -17,29 +17,37 @@
 
 // dependencies
 use std::io;
+use std::io::Write;
 use std::fs;
+use std::fs::OpenOptions;
 use std::fs::File;
 use std::env;
 use std::path::Path;
 use std::path::PathBuf;
 use glob::glob;
 use crossterm::{event::{read, Event, KeyCode}, terminal};
+use chrono::{Local, Timelike};
 
 // constants
 const CONFIG_FILE: &str = ".config/lindexer/lindexer.toml";
 const CONFIG_DIR: &str = ".config/lindexer";
+const LOG_FILE: &str = ".config/lindexer/logs.txt";
 
 // main thread
-fn main() -> std::io::Result<()> {
-    if Config::validate(CONFIG_FILE) {
-        let config = Config::parse(CONFIG_FILE.to_string());
+fn main() -> Result<(), std::io::Error>  {
+    let mut index = Log {
+        log_index: "".to_string()
+    };
+    let config = if Config::validate(CONFIG_FILE) {
+        Config::parse(CONFIG_FILE.to_string())
     } else {
         Config::create(CONFIG_DIR, CONFIG_FILE);
         return Ok(())
-    }
+    };
+    let logcheck = config.logging;
     match terminal::enable_raw_mode() {
         Ok(_) => {
-            println!("q = quit\r\n")
+            println!("q = quit, c = check arguments\r\n")
         }
         Err(error) => {
             println!("couldn't enable raw mode: {}", error);
@@ -48,7 +56,20 @@ fn main() -> std::io::Result<()> {
     loop {
         if let Event::Key(key) = read()? {
             if key.code == KeyCode::Char('q') {
+                if logcheck == true {
+                    match Log::writelog(LOG_FILE, index) {
+                        Ok(_) => {
+                            println!("session logged successfully")
+                        }
+                        Err(error) => {
+                            println!("couldn't log session: {}", error)
+                        }
+                    }
+                }
                 break
+            }
+            if key.code == KeyCode::Char('c') {
+                index.printlog("hello".to_string(), logcheck);
             }
         }
     }
@@ -56,8 +77,8 @@ fn main() -> std::io::Result<()> {
 }
 
 // config implementations
-struct Config{
-    logging: bool
+pub struct Config {
+    pub logging: bool
 }
 impl Config {
     
@@ -126,5 +147,29 @@ impl Config {
                 }
             }
         }
+    }
+}
+
+// logging
+#[derive(Debug)]
+struct Log {
+    log_index: String
+}
+impl Log {
+    // adds log
+    fn printlog(&mut self, message: String, logging: bool) {
+    let now = Local::now();
+    let message = format!("[{:02}:{:02}:{:02}] {}", now.hour(), now.minute(), now.second(), message);
+    println!("{}", message);
+    if logging {
+        self.log_index.push_str(&message);
+    }
+    }
+    // writes logs to file
+    fn writelog(file: &str, strings: Log) -> std::io::Result<()> {
+        let home = env::var_os("HOME").expect("HOME not set");
+        let target = PathBuf::from(home).join(file);
+        let mut final_target = OpenOptions::new().create(true).append(true).open(target)?;
+        final_target.write_all(strings.log_index.as_bytes())
     }
 }
