@@ -35,6 +35,8 @@ const LOG_FILE: &str = ".config/lindexer/logs.txt";
 
 // main thread
 fn main() -> Result<(), std::io::Error>  {
+    
+    // all the parsing stuff (i swear i will organize it later)
     let mut index = Log {
         log_index: "".to_string()
     };
@@ -45,40 +47,21 @@ fn main() -> Result<(), std::io::Error>  {
         return Ok(())
     };
     let logcheck = config.logging;
-    match terminal::enable_raw_mode() {
-        Ok(_) => {
-            println!("q = quit, c = check arguments\r\n")
-        }
-        Err(error) => {
-            println!("couldn't enable raw mode: {}\r\n", error);
-        }
-    }
+    
+    // ----------THE ACTUAL CODE----------
+    println!("q: quit, c: check config, s: sort");
+    Input::start();
     loop {
-        if let Event::Key(key) = read()? {
-            if key.code == KeyCode::Char('q') {
-                if logcheck == true {
-                    match Log::writelog(LOG_FILE, &index) {
-                        Ok(_) => {
-                            println!("session logged successfully\r\n")
-                        }
-                        Err(error) => {
-                            println!("couldn't log session: {}\r\n", error)
-                        }
-                    }
-                }
-                break
-            }
-            if key.code == KeyCode::Char('c') {
-                println!("logging: {}\r\n", config.logging)
-            }
+        match Input::is() {
+            'q' => { break }
+            'c' => { println!("logging = {}\r\n", logcheck); break }
+            's' => {  }
+            _ => {}
         }
     }
-    match terminal::disable_raw_mode() {
-        Ok(_) => {}
-        Err(error) => {
-            println!("couldn't disable raw mode: {}", error)
-        }
-    }
+    
+    // ----------END----------
+    Input::stop();
     println!("exiting");
     Log::writelog(LOG_FILE, &index)
 }
@@ -91,6 +74,8 @@ impl Config {
     
     // config parser
     fn parse(path: String) -> Config {
+        let mut logging = false;
+        let mut sortdir = String::new();
         let home = env::var_os("HOME").expect("HOME not set");
         let config_file = PathBuf::from(home).join(path);
         match fs::read_to_string(config_file) {
@@ -102,20 +87,21 @@ impl Config {
                     match variable.trim() {
                         "logging" => {
                             if value.trim() == "true" {
-                                return Config { logging: true }
+                                logging = true
                             }
                         }
+                        "sortdir" => {
+                            sortdir.push_str(value)
+                        } 
                         _ => {}
                     }
                 }
-                return Config { logging: false }
             }
             Err(error) => { 
                 println!("couldn't read config file contents: {}\r\n", error);
-                return Config { logging: false }
-                
             }
         }
+        return Config { logging: logging }
     }
     
     // config validator
@@ -155,6 +141,7 @@ impl Config {
             }
         }
     }
+
 }
 
 // logging
@@ -163,6 +150,7 @@ struct Log {
     log_index: String
 }
 impl Log {
+    
     // adds log
     fn printlog(&mut self, message: String, logging: bool) {
     let now = Local::now();
@@ -172,6 +160,7 @@ impl Log {
         self.log_index.push_str(&message);
     }
     }
+    
     // writes logs to file
     fn writelog(file: &str, strings: &Log) -> std::io::Result<()> {
         let home = env::var_os("HOME").expect("HOME not set");
@@ -179,4 +168,47 @@ impl Log {
         let mut final_target = OpenOptions::new().create(true).append(true).open(target)?;
         final_target.write_all(strings.log_index.as_bytes())
     }
+
+}
+
+struct Input {}
+impl Input {
+    
+    // starts raw mode
+    fn start() {
+        match terminal::enable_raw_mode() {
+            Ok(_) => {}
+            Err(error) => { println!("failed to enable raw mode: {}", error); return }
+        }
+    }
+    
+    // stops raw mode
+    fn stop() {
+        match terminal::disable_raw_mode() {
+            Ok(_) => {}
+            Err(error) => { println!("failed to disable raw mode: {}", error); return }
+        }
+    }
+    
+    // checks current char
+    fn is() -> char {
+        if let Ok(Event::Key(current)) = read() {
+            if current.code == KeyCode::Char('q') {
+                return 'q'
+            } else if current.code == KeyCode::Char('c') {
+                return 'c'
+            } else { return '_' }
+        } else {
+            return '_'
+        }
+    }
+
+}
+
+// sorting
+struct Sort {}
+impl Sort {
+
+    fn sort() {}
+
 }
