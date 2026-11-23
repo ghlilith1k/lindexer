@@ -50,30 +50,37 @@ fn main() -> Result<(), std::io::Error>  {
             println!("q = quit, c = check arguments\r\n")
         }
         Err(error) => {
-            println!("couldn't enable raw mode: {}", error);
+            println!("couldn't enable raw mode: {}\r\n", error);
         }
     }
     loop {
         if let Event::Key(key) = read()? {
             if key.code == KeyCode::Char('q') {
                 if logcheck == true {
-                    match Log::writelog(LOG_FILE, index) {
+                    match Log::writelog(LOG_FILE, &index) {
                         Ok(_) => {
-                            println!("session logged successfully")
+                            println!("session logged successfully\r\n")
                         }
                         Err(error) => {
-                            println!("couldn't log session: {}", error)
+                            println!("couldn't log session: {}\r\n", error)
                         }
                     }
                 }
                 break
             }
             if key.code == KeyCode::Char('c') {
-                index.printlog("hello".to_string(), logcheck);
+                println!("logging: {}\r\n", config.logging)
             }
         }
     }
-    terminal::disable_raw_mode()
+    match terminal::disable_raw_mode() {
+        Ok(_) => {}
+        Err(error) => {
+            println!("couldn't disable raw mode: {}", error)
+        }
+    }
+    println!("exiting");
+    Log::writelog(LOG_FILE, &index)
 }
 
 // config implementations
@@ -104,7 +111,7 @@ impl Config {
                 return Config { logging: false }
             }
             Err(error) => { 
-                println!("couldn't read config file contents: {}", error);
+                println!("couldn't read config file contents: {}\r\n", error);
                 return Config { logging: false }
                 
             }
@@ -127,21 +134,21 @@ impl Config {
             if config_dir.is_dir() {
                 match File::create(&config_file) {
                     Ok(_) => {
-                        println!("successfully created config file, relaunch lindexer");
+                        println!("successfully created config file, relaunch lindexer\r\n");
                         break
                     }
                     Err(error) => {
-                        println!("couldn't create config file: {}", error);
+                        println!("couldn't create config file: {}\r\n", error);
                         break
                     }
                 }
             } else {
                 match fs::create_dir_all(&config_dir) {
                     Ok(_) => {
-                        println!("successfully create config directory")
+                        println!("successfully create config directory\r\n")
                     }
                     Err(error) => {
-                        println!("couldn't create config directory: {}", error);
+                        println!("couldn't create config directory: {}\r\n", error);
                         break
                     }
                 }
@@ -160,13 +167,13 @@ impl Log {
     fn printlog(&mut self, message: String, logging: bool) {
     let now = Local::now();
     let message = format!("[{:02}:{:02}:{:02}] {}", now.hour(), now.minute(), now.second(), message);
-    println!("{}", message);
+    println!("{}\r\n", message);
     if logging {
         self.log_index.push_str(&message);
     }
     }
     // writes logs to file
-    fn writelog(file: &str, strings: Log) -> std::io::Result<()> {
+    fn writelog(file: &str, strings: &Log) -> std::io::Result<()> {
         let home = env::var_os("HOME").expect("HOME not set");
         let target = PathBuf::from(home).join(file);
         let mut final_target = OpenOptions::new().create(true).append(true).open(target)?;
