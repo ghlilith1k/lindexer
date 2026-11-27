@@ -29,7 +29,7 @@ use crossterm::{event::{read, Event, KeyCode}, terminal};
 use chrono::{Local, Timelike};
 
 // constants
-const CONFIG_FILE: &str = ".config/lindexer/lindexer.toml";
+const CONFIG_FILE: &str = ".config/lindexer/config.conf";
 const CONFIG_DIR: &str = ".config/lindexer";
 const LOG_FILE: &str = ".config/lindexer/logs.txt";
 
@@ -46,15 +46,29 @@ fn main() -> Result<(), std::io::Error>  {
         Config::create(CONFIG_DIR, CONFIG_FILE);
         return Ok(())
     };
-    let logcheck = config.logging;
-    
+    let logging = config.logging;
+    let mut sortdir = config.sortdir;
+    if sortdir == "".to_string() {
+        sortdir = "none".to_string()
+    }
+
     // ----------THE ACTUAL CODE----------
-    println!("q: quit, c: check config, s: sort");
     Input::start();
+    println!("lindexer v0.0.2-alpha\r\nCopyright (C) 2026 ghlilith1k\r\ncheck https://github.com/ghlilith1k/lindexer for details\r\n\nq: quit, h: help, c: check config, s: sort\r\n");
     loop {
-        match Input::is() {
+        match Input::check() {
             'q' => { break }
-            'c' => { println!("logging = {}\r\n", logcheck); break }
+            'h' => { println!(
+                ""
+            ) }
+            'c' => { 
+                println!("logging = {}, sortdir = {}\r\n", logging, sortdir);
+                if sortdir == "none" {
+                    println!("no sortdir defined, please define it in ~/.config/lindexer/config.conf\r\nremember, it has to be inside another directory\r\n");
+                    break
+                }
+                break 
+            }
             's' => {  }
             _ => {}
         }
@@ -68,7 +82,8 @@ fn main() -> Result<(), std::io::Error>  {
 
 // config implementations
 pub struct Config {
-    pub logging: bool
+    pub logging: bool,
+    pub sortdir: String
 }
 impl Config {
     
@@ -101,7 +116,7 @@ impl Config {
                 println!("couldn't read config file contents: {}\r\n", error);
             }
         }
-        return Config { logging: logging }
+        return Config { logging: logging, sortdir: sortdir }
     }
     
     // config validator
@@ -191,7 +206,7 @@ impl Input {
     }
     
     // checks current char
-    fn is() -> char {
+    fn check() -> char {
         if let Ok(Event::Key(current)) = read() {
             if current.code == KeyCode::Char('q') {
                 return 'q'
