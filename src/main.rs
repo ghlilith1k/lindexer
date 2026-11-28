@@ -162,7 +162,7 @@ impl Config {
 // logging
 #[derive(Debug)]
 struct Log {
-    log_index: String
+    log_index: String,
 }
 impl Log {
     
@@ -228,6 +228,8 @@ impl Input {
 struct Sort {}
 impl Sort {
 
-    fn sort() {}
+    fn sort(directory: String) {
+        
+    }
 
 }

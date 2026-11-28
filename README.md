@@ -46,11 +46,12 @@ just a starting point for future release
 
 ## release v0.0.2-alpha - packaged
 
-- added logging
-- added input handling
+- implemented logging
+- implemented input handling
 
 # release v0.0.3-alpha - pending
 
-- added basic sorting algorithm
+- implemented basic sorting algorithm
 - implemented fs calls
 - reordered uses
+- added example config
