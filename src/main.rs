@@ -16,17 +16,19 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 // dependencies
-use std::io;
-use std::io::Write;
-use std::fs;
-use std::fs::OpenOptions;
-use std::fs::File;
-use std::env;
-use std::path::Path;
-use std::path::PathBuf;
-use glob::glob;
-use crossterm::{event::{read, Event, KeyCode}, terminal};
+use std::{
+    io::{Write},
+    fs,
+    fs::{OpenOptions,File},
+    env,
+    path::{Path,PathBuf}
+};
+use crossterm::{
+    event::{read, Event, KeyCode},
+    terminal
+};
 use chrono::{Local, Timelike};
+use glob::glob;
 
 // constants
 const CONFIG_FILE: &str = ".config/lindexer/config.conf";
@@ -36,7 +38,7 @@ const LOG_FILE: &str = ".config/lindexer/logs.txt";
 // main thread
 fn main() -> Result<(), std::io::Error>  {
     
-    // all the parsing stuff (i swear i will organize it later)
+    // all the parsing stuff
     let mut index = Log {
         log_index: "".to_string()
     };
@@ -58,26 +60,24 @@ fn main() -> Result<(), std::io::Error>  {
     loop {
         match Input::check() {
             'q' => { break }
-            'h' => { println!(
-                ""
-            ) }
+            'h' => { println!("index:\r\n\x20 quit (q): terminates the program\r\n\x20 help (h): prints this message\r\n\x20 check config (c): checks config variables applied at runtime\r\n\x20 sort (s): sorts files in specified directory\r\n") }
             'c' => { 
                 println!("logging = {}, sortdir = {}\r\n", logging, sortdir);
                 if sortdir == "none" {
                     println!("no sortdir defined, please define it in ~/.config/lindexer/config.conf\r\nremember, it has to be inside another directory\r\n");
                     break
                 }
-                break 
             }
             's' => {  }
             _ => {}
         }
     }
-    
     // ----------END----------
+
     Input::stop();
     println!("exiting");
     Log::writelog(LOG_FILE, &index)
+    
 }
 
 // config implementations
@@ -210,8 +210,12 @@ impl Input {
         if let Ok(Event::Key(current)) = read() {
             if current.code == KeyCode::Char('q') {
                 return 'q'
+            } else if current.code == KeyCode::Char('h') {
+                return 'h'
             } else if current.code == KeyCode::Char('c') {
                 return 'c'
+            } else if current.code == KeyCode::Char('s') {
+                return 's'
             } else { return '_' }
         } else {
             return '_'
