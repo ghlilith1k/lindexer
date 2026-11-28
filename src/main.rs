@@ -68,7 +68,7 @@ fn main() -> Result<(), std::io::Error>  {
                     break
                 }
             }
-            's' => {  }
+            's' => { Sort::sort(&sortdir) }
             _ => {}
         }
     }
@@ -228,8 +228,21 @@ impl Input {
 struct Sort {}
 impl Sort {
 
-    fn sort(directory: String) {
-        
+    fn sort(directory: &str) {
+        if Path::new(directory.trim()).is_dir() {
+            let sortdir = format!("{}/*", directory);
+            for entry in glob(&sortdir).expect("could not get entries") {
+                let entry = entry.unwrap();
+                let file = entry.to_string_lossy();
+                if file.contains(".mp3") {
+                    println!("found mp3 file: {}", file)
+                } else {
+                    println!("hmmm")
+                }
+            }
+        } else {
+            println!("{} directory not found\r\n", directory)
+        }
     }
 
 }
